@@ -2,9 +2,9 @@
 Topik: Inheritance (Kategori Produk)
 
 ## Identitas
-- Nama  : [Fauzatul Farhanah]
-- NIM   : [240202834]
-- Kelas : [3IKRA]
+- Nama  : Fauzatul Farhanah
+- NIM   : 240202834
+- Kelas : 3IKRA
 
 ---
 
@@ -48,7 +48,7 @@ Topik: Inheritance (Kategori Produk)
 
 ## Kode Program 
 
-### Benih.java
+Benih.java
 ```
 package com.upb.agripos.model;
 
@@ -78,8 +78,8 @@ public class Benih extends Produk {
 }
 ```
 
-### Pupuk.java
-``
+Pupuk.java
+```
 package com.upb.agripos.model;
 
 public class Pupuk extends Produk {
