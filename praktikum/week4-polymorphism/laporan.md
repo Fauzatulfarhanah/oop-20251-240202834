@@ -245,9 +245,11 @@ public class MediaTanam extends Produk {
 
 ## Hasil Eksekusi
 ---
-![alt text](<Screenshot 2025-10-26 064956.png>)
+<img width="972" height="861" alt="Screenshot 2025-10-26 064956" src="https://github.com/user-attachments/assets/8627a853-33d2-4dd6-8360-85098198a55a" />
+<img width="870" height="812" alt="Screenshot 2025-10-26 065108" src="https://github.com/user-attachments/assets/a8fd33fa-2cb6-47d4-9fcb-aeceb70e6d6f" />
+
 ---
-![alt text](<Screenshot 2025-10-26 065108.png>)
+
 
 ## Analisis
 - Jelaskan bagaimana kode berjalan. 
@@ -266,6 +268,7 @@ Solusi: Menyesuaikan urutan dan tipe data parameter di setiap constructor subcla
 
 ## Kesimpulan
 Polymorphism membuat program bisa menggunakan satu metode yang sama untuk berbagai jenis objek dari subclass yang berbeda. Dengan cara ini, pengelolaan data produk seperti benih, pupuk, alat pertanian, vitamin tanaman, obat hama, dan media tanam menjadi lebih mudah dan terstruktur dalam satu program.
+
 ---
 
 ## Quiz
