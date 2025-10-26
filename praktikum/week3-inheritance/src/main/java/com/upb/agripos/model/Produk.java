@@ -13,6 +13,7 @@ public class Produk {
         this.stok = stok;
     }
 
+// getter & setter
     public String getKode() { return kode; }
     public String getNama() { return nama; }
     public double getHarga() { return harga; }
@@ -22,5 +23,10 @@ public class Produk {
     public void setNama(String nama) { this.nama = nama; }
     public void setHarga(double harga) { this.harga = harga; }
     public void setStok(int stok) { this.stok = stok; }
+    
+    // === Method untuk Overriding (Polymorphism) ===
+public String getInfo() {
+    return "Produk: " + nama + " (Kode: " + kode + ")";
+}
 
 }
