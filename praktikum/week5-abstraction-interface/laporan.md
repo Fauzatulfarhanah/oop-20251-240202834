@@ -37,6 +37,7 @@ Dalam konteks Agri-POS, **Pembayaran** dapat dimodelkan sebagai abstract class d
 2. **Subclass Konkret**
    - `Cash` → biaya = 0, proses = selalu berhasil jika `tunai >= totalBayar()`.
    - `EWallet` → biaya = 1.5% dari `total`; proses = membutuhkan validasi.
+   - `TransferBank` → biaya tetap = Rp3.500; proses = berhasil jika kode konfirmasi 4 digit valid (digunakan sebagai simulasi validasi transfer bank).
 
 3. **Interface**
    - `Validatable` → `boolean validasi();` (contoh: OTP).
@@ -45,6 +46,7 @@ Dalam konteks Agri-POS, **Pembayaran** dapat dimodelkan sebagai abstract class d
 4. **Multiple Inheritance via Interface**
    - `EWallet` mengimplementasikan **dua interface**: `Validatable`, `Receiptable`.
    - `Cash` setidaknya mengimplementasikan `Receiptable`.
+   - `TransferBank` mengimplementasikan **dua interface**, yaitu `Validatable` dan `Receiptable`, karena memerlukan validasi kode konfirmasi 4 digit dan juga menghasilkan struk pembayaran.
 
 5. **Main Class**
     - Buat `MainAbstraction.java` untuk mendemonstrasikan pemakaian `Pembayaran` (polimorfik).
@@ -296,7 +298,7 @@ public class CreditBy {
 ---
 ---
 ## Hasil Eksekusi
-![alt text](<Screenshot 2025-11-13 192447.png>)
+![alt text](<Screenshot Abstraction(Abstract Class & Interface).png>)
 ---
 
 ---
