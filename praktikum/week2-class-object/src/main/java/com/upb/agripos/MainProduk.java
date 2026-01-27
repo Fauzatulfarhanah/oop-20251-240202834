@@ -1,13 +1,13 @@
 package main.java.com.upb.agripos;
 
-import main.java.com.upb.agripos.util.CreditBy;
 import main.java.com.upb.agripos.model.Produk;
+import main.java.com.upb.agripos.util.CreditBy;
 
 public class MainProduk {
     public static void main(String[] args) {
-        Produk p1 = new Produk("KMI-001", "AirPods", 2100000, 150);
-        Produk p2 = new Produk("SMR-002", "Smartwatch", 1500000, 98);
-        Produk p3 = new Produk("FTB-003", "FitBand", 2000000, 119);
+        Produk p1 = new Produk("BNH-001", "Benih Padi", 25000, 100);
+        Produk p2 = new Produk("PPK-002", "Pupuk Urea", 35000, 40);
+        Produk p3 = new Produk("ALT-003", "Cangkul Baja", 90000, 15);
  
         System.out.println("=== Daftar Produk ===");
         System.out.println("Kode: " + p1.getKode() + ", Nama: " + p1.getNama() + ", Harga: " + p1.getHarga() + ", Stok: " + p1.getStok());

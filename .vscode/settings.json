@@ -1,0 +1,13 @@
+{
+    "java.project.sourcePaths": [
+        "praktikum/week9 -exception-handling/src",
+        "praktikum/week11-dao-database/src/main/java/com/upb/agripos/model",
+        "praktikum/week10-pattern-testing/src2/test/java",
+        "praktikum/week10-pattern-testing/src/main/java",
+        "praktikum/week10-pattern-testing/src",
+        "praktikum/week11-dao-database/src/main/java/com/upb/agripos"
+    ],
+    "java.project.referencedLibraries": [
+        "c:\\Users\\HP\\Downloads\\junit-platform-console-standalone-1.10.2.jar"
+    ]
+}

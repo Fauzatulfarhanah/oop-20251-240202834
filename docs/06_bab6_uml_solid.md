@@ -109,7 +109,7 @@ Mahasiswa **wajib membuat minimal empat diagram berikut**:
 | **Use Case Diagram** | Menjelaskan aktor dan fungsionalitas sistem                                                     | `.dot` / `.drawio` / `.png` |
 | **Activity Diagram** | Menggambarkan alur proses utama (contoh: Checkout)                                              | `.dot` / `.drawio` / `.png` |
 | **Sequence Diagram** | Menunjukkan interaksi antar objek (contoh: proses pembayaran)                                   | `.dot` / `.drawio` / `.png` |
-| **Class Diagram**    | Menjelaskan struktur class, atribut, method, dan relasi (association, inheritance, composition) | `.dot` / `.drawio` / `.png` |
+| **Class Diagram**    | Menjelaskan struktur class, atribut, method, dan relasi (association, inheritance, composition) | `.dot` / `.drawio` / `.png` |  
 
 Selain itu, setiap mahasiswa harus menjelaskan **penerapan prinsip SOLID** yang muncul dalam desain, mencakup:
 
