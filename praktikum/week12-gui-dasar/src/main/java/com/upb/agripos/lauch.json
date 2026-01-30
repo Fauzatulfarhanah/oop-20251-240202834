@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run JavaFX (JDK17)",
+      "request": "launch",
+      "mainClass": "com.upb.agripos.AppJavaFX",
+      "cwd": "${workspaceFolder}",
+      "vmArgs": "--module-path C:/javafx-17/lib --add-modules javafx.controls,javafx.fxml",
+      "javaExec": "C:/Program Files/Java/jdk-17/bin/java.exe"
+    }
+  ]
+}
