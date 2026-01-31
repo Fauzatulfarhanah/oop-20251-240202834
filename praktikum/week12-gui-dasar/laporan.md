@@ -23,7 +23,7 @@ Tugas ini adalah membuat aplikasi JavaFX untuk **Manajemen Produk Agri-POS** yan
 - Form input dengan field: Kode Produk, Nama Produk, Harga, dan Stok
 - Tombol "Tambah Produk" untuk menyimpan data ke database
 - Tombol "Refresh List" untuk memperbarui daftar produk
-- TableView untuk menampilkan daftar produk yang telah tersimpan
+- ListView untuk menampilkan daftar produk yang telah tersimpan
 ---
 
 ## 3. Arsitektur Aplikasi
@@ -36,7 +36,7 @@ Aplikasi menggunakan **arsitektur MVC (Model-View-Controller)** dengan tambahan 
 │          (ProductFormView.java)                  │
 │  - TextField (code, name, price, stock)          │
 │  - Button (Tambah, Refresh)                      │
-│  - TableView (daftar produk)                      │
+│  - ListView (daftar produk)                      │
 └────────────────┬────────────────────────────────┘
                  │ Event Handler
                  ↓
@@ -100,7 +100,7 @@ week12-gui-dasar/
 
 | Artefak Bab 6 | Referensi | Handler GUI | Controller/Service | DAO | Dampak UI/DB |
 |---|---|---|---|---|---|
-| **Use Case** | UC-01 Tambah Produk | Tombol "Tambah Produk" (`btnAdd.setOnAction`) | `ProductController.add()` → `ProductService.insert()` | `ProductDAOImpl.insert()` | UI: TableView bertambah <br> DB: INSERT ke tabel products |
+| **Use Case** | UC-01 Tambah Produk | Tombol "Tambah Produk" (`btnAdd.setOnAction`) | `ProductController.add()` → `ProductService.insert()` | `ProductDAOImpl.insert()` | UI: ListView bertambah <br> DB: INSERT ke tabel products |
 | **Activity Diagram** | AD-01 Tambah Produk | Tombol "Tambah Produk" | 1. Validasi input di Controller <br> 2. ProductService.insert() <br> 3. Refresh ListView | `ProductDAOImpl.insert()` | Flow: Input → Validasi → Simpan → Tampil |
 | **Sequence Diagram** | SD-01 Tambah Produk | `btnAdd` event | View → Controller → Service → DAO | DAO → PostgreSQL DB | Urutan: <br> 1. View.btnAdd <br> 2. Controller.add() <br> 3. Service.insert() <br> 4. DAO.insert() <br> 5. DB INSERT <br> 6. Refresh UI |
 | **Class Diagram** | Entity: Product | - | Model: `Product.java` (code, name, price, stock) | - | Struktur data sesuai desain |
@@ -205,9 +205,9 @@ btnRefresh.setOnAction(event -> {
 
 ---
 
-## 10. Screenshot Aplikasi
+## 10. Screenshot 
 
-![alt text](image-1.png)
+![alt text](image.png)
 
 ---
 
@@ -279,7 +279,7 @@ btnRefresh.setOnAction(event -> {
 
 ### Test Case 5: Refresh List
 - **Action**: Klik tombol "Refresh List"
-- **Expected**: TableView update dengan data terbaru dari database
+- **Expected**: ListView update dengan data terbaru dari database
 - **Result**: ✅ PASS
 
 ---
@@ -295,7 +295,7 @@ terus di sini kan ga bisa dan bener bener ngestuck berhari hari ga bisa di run y
 **Problem**: Tidak bisa koneksi ke PostgreSQL
 **Solusi**: Pastikan PostgreSQL running, database & tabel sudah dibuat, username/password benar
 
-### Kendala 3: TableView Tidak Update
+### Kendala 3: ListView Tidak Update
 **Problem**: Setelah tambah produk, ListView tidak update otomatis
 **Solusi**: Panggil `refreshProductList()` setelah operasi insert
 
