@@ -39,7 +39,7 @@ public class ProductController {
         } catch (IllegalArgumentException e) {
             showAlert("Error", e.getMessage(), Alert.AlertType.ERROR);
         } catch (Exception e) {
-            String msg = "Gagal tambah produk: " + e.getMessage();
+            String msg = "Gagal tambah: " + e.getMessage();
             showAlert("Error", msg, Alert.AlertType.ERROR);
         }
     }
@@ -48,7 +48,7 @@ public class ProductController {
         try {
             return productService.findAll();
         } catch (Exception e) {
-            String msg = "Gagal load data: " + e.getMessage();
+            String msg = "Gagal load: " + e.getMessage();
             showAlert("Error", msg, Alert.AlertType.ERROR);
             return new ArrayList<>();
         }
@@ -61,7 +61,7 @@ public class ProductController {
         } catch (IllegalArgumentException e) {
             showAlert("Error", e.getMessage(), Alert.AlertType.ERROR);
         } catch (Exception e) {
-            String msg = "Gagal hapus produk: " + e.getMessage();
+            String msg = "Gagal hapus: " + e.getMessage();
             showAlert("Error", msg, Alert.AlertType.ERROR);
         }
     }

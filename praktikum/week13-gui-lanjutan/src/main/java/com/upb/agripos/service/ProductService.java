@@ -47,7 +47,7 @@ public class ProductService {
         
         Product existing = productDAO.findByCode(code);
         if (existing == null) {
-            throw new IllegalArgumentException("Produk dengan kode " + code + " tidak ditemukan");
+            throw new IllegalArgumentException("Produk tidak ditemukan");
         }
         
         productDAO.delete(code);

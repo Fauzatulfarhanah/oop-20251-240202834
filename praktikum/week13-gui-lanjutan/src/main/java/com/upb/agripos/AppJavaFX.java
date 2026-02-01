@@ -21,6 +21,11 @@ public class AppJavaFX extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        System.out.println("=================================");
+        System.out.println("WEEK 13 - TABLEVIEW VERSION");
+        System.out.println("Loading ProductTableView...");
+        System.out.println("=================================");
+        
         try {
             connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
             System.out.println("Database Connected");
@@ -29,12 +34,18 @@ public class AppJavaFX extends Application {
             ProductService productService = new ProductService(productDAO);
             ProductController productController = new ProductController(productService);
 
+            System.out.println("Creating ProductTableView instance...");
             ProductTableView view = new ProductTableView(productController);
+            
+            System.out.println("Starting ProductTableView...");
             view.start(primaryStage);
+            
+            System.out.println("ProductTableView loaded successfully!");
 
             primaryStage.setOnCloseRequest(event -> closeConnection());
 
         } catch (Exception e) {
+            System.out.println("ERROR: " + e.getMessage());
             String msg = "Database Error: " + e.getMessage();
             showAlert("Error", msg);
             e.printStackTrace();
@@ -66,7 +77,10 @@ public class AppJavaFX extends Application {
     }
 
     public static void main(String[] args) {
+        System.out.println("=========================================");
         System.out.println("Week 13 - Fauzatul Farhanah (240202834)");
+        System.out.println("GUI Lanjutan - TableView + Hapus Produk");
+        System.out.println("=========================================");
         launch(args);
     }
 }
