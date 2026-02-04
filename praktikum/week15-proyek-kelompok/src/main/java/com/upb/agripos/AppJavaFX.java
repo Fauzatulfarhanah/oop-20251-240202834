@@ -11,48 +11,48 @@ import com.upb.agripos.dao.TransactionDAO;
 import com.upb.agripos.dao.UserDAO;
 import com.upb.agripos.service.AuthService;
 import com.upb.agripos.service.CartService;
-import com.upb.agripos.service.PaymentService;
 import com.upb.agripos.service.ProductService;
 import com.upb.agripos.service.ReportService;
 import com.upb.agripos.service.TransactionService;
 import com.upb.agripos.view.LoginView;
 
 import javafx.application.Application;
+import javafx.stage.Stage;
 
-public class AppJavaFX {
+public class AppJavaFX extends Application {
     private static PosController posController;
     private static AuthController authController;
     private static ReportController reportController;
 
-    public static void main(String[] args) {
+    @Override
+    public void start(Stage stage) {
         try {
-            // 1. Initialize DAOs (Anggota 1)
-            ProductDAO productDAO = new JdbcProductDAO();
-            UserDAO userDAO = new JdbcUserDAO();
-            TransactionDAO transactionDAO = new JdbcTransactionDAO();
-            
-            // 2. Initialize Services (Anggota 2)
-            ProductService productService = new ProductService(productDAO);
-            CartService cartService = new CartService();
-            AuthService authService = new AuthService(userDAO);
-            TransactionService transactionService = new TransactionService(transactionDAO, productService);
-            PaymentService paymentService = new PaymentService();
-            ReportService reportService = new ReportService(transactionDAO);
-            
-            // 3. Initialize Controllers (Anggota 3)
-            posController = new PosController(productService, cartService, transactionService, paymentService, authService);
-            authController = new AuthController(authService);
-            reportController = new ReportController(reportService);
-            
-            // 4. Launch UI
-            Application.launch(LoginView.class, args);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            // 1. DAO
+            ProductDAO pDao = new JdbcProductDAO();
+            UserDAO uDao = new JdbcUserDAO();
+            TransactionDAO tDao = new JdbcTransactionDAO();
+
+            // 2. Service
+            AuthService aService = new AuthService(uDao);
+            ProductService pService = new ProductService(pDao);
+            CartService cService = new CartService();
+            TransactionService tService = new TransactionService(tDao, pService);
+            ReportService rService = new ReportService(tDao);
+
+            // 3. Controller
+            authController = new AuthController(aService);
+            reportController = new ReportController(rService);
+            posController = new PosController(pService, cService, tService, aService, rService);
+
+            // 4. Start
+            new LoginView().start(stage);
+
+        } catch (Exception e) { e.printStackTrace(); }
     }
-    
-    public static PosController getController() { return posController; }
+
+    public static PosController getPosController() { return posController; }
     public static AuthController getAuthController() { return authController; }
     public static ReportController getReportController() { return reportController; }
+
+    public static void main(String[] args) { launch(args); }
 }

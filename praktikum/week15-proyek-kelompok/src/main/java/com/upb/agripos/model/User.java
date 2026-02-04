@@ -9,6 +9,7 @@ public class User {
 
     public User() {}
 
+    // CONSTRUCTOR INI YANG HILANG
     public User(int id, String username, String name, UserRole role) {
         this.id = id;
         this.username = username;

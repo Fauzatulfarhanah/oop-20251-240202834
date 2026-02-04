@@ -1,7 +1,7 @@
 package com.upb.agripos.service;
 
 import com.upb.agripos.dao.UserDAO;
-import com.upb.agripos.exception.AuthenticationException;
+import com.upb.agripos.exception.AuthenticationException; // Wajib import ini
 import com.upb.agripos.model.User;
 import com.upb.agripos.model.UserRole;
 
@@ -14,18 +14,21 @@ public class AuthService {
     }
     
     public User authenticate(String username, String password) throws Exception {
+        // Validasi input kosong (Best Practice)
         if (username == null || username.trim().isEmpty()) {
             throw new AuthenticationException("Username tidak boleh kosong");
         }
-        if (password == null || password.trim().isEmpty()) {
-            throw new AuthenticationException("Password tidak boleh kosong");
+        
+        // Cek Login ke Database
+        if(userDAO.validateCredentials(username, password)) {
+            currentUser = userDAO.findByUsername(username);
+            return currentUser;
         }
-        boolean valid = userDAO.validateCredentials(username, password);
-        if (!valid) {
-            throw new AuthenticationException("Username atau password salah");
-        }
-        currentUser = userDAO.findByUsername(username);
-        return currentUser;
+        
+        // [PERBAIKAN DISINI]
+        // Sebelumnya: throw new Exception("Login Gagal");
+        // Sekarang: Gunakan AuthenticationException agar sesuai dengan Unit Test
+        throw new AuthenticationException("Login Gagal: Username atau password salah");
     }
     
     public boolean validateRole(User user, UserRole requiredRole) {

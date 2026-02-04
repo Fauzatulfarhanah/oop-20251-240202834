@@ -1,37 +1,20 @@
 package com.upb.agripos.model;
-
 import java.math.BigDecimal;
 
 public class EWalletPayment implements PaymentMethod {
-    private String provider; // GoPay, OVO, Dana, dll
-    private String accountNumber;
+    private String provider;
+    private String number;
     
-    public EWalletPayment() {}
-    
-    public EWalletPayment(String provider, String accountNumber) {
+    public EWalletPayment(String provider, String number) {
         this.provider = provider;
-        this.accountNumber = accountNumber;
+        this.number = number;
     }
-    
+
     @Override
     public boolean processPayment(BigDecimal amount) throws Exception {
-        if (provider == null || provider.isEmpty()) {
-            throw new Exception("Provider e-wallet harus dipilih!");
-        }
-        if (accountNumber == null || accountNumber.isEmpty()) {
-            throw new Exception("Nomor akun e-wallet harus diisi!");
-        }
-        System.out.println("Pembayaran " + provider + " berhasil untuk " + accountNumber + ": Rp " + amount);
+        // Mock payment gateway logic
+        if(number.isEmpty()) throw new Exception("Nomor E-Wallet kosong");
         return true;
     }
-    
-    @Override
-    public String getMethodName() {
-        return "EWALLET";
-    }
-    
-    public String getProvider() { return provider; }
-    public void setProvider(String provider) { this.provider = provider; }
-    public String getAccountNumber() { return accountNumber; }
-    public void setAccountNumber(String accountNumber) { this.accountNumber = accountNumber; }
+    @Override public String getMethodName() { return "EWALLET"; }
 }

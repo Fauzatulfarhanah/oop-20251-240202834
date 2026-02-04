@@ -1,38 +1,40 @@
 package com.upb.agripos.view;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.time.LocalDate;
 
-import com.upb.agripos.controller.AuthController;
+import com.upb.agripos.AppJavaFX;
 import com.upb.agripos.controller.PosController;
+import com.upb.agripos.controller.ReportController;
 import com.upb.agripos.model.CartItem;
 import com.upb.agripos.model.CashPayment;
 import com.upb.agripos.model.EWalletPayment;
 import com.upb.agripos.model.PaymentMethod;
 import com.upb.agripos.model.Product;
-import com.upb.agripos.model.Receipt;
 import com.upb.agripos.model.Transaction;
 import com.upb.agripos.model.User;
 
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
+import javafx.scene.control.Separator;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
@@ -40,501 +42,459 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 public class PosView extends Application {
-    private PosController controller;
-    private AuthController authController;
+
+    private final PosController posController = AppJavaFX.getPosController();
+    private final ReportController reportController = AppJavaFX.getReportController();
     
-    private TableView<Product> productTable;
-    private ObservableList<Product> productData;
+    // --- UI GLOBAL COMPONENTS ---
+    private ObservableList<Product> productData = FXCollections.observableArrayList();
+
+    private TableView<Product> tableProduct = new TableView<>();      // Tabel Kasir
+    private TableView<CartItem> tableCart = new TableView<>();        // Tabel Keranjang
+    private TableView<Product> tableAdminProduct = new TableView<>(); // Tabel Admin
     
-    private TableView<CartItem> cartTable;
-    private ObservableList<CartItem> cartData;
+    private Label lblTotalCart = new Label("Rp 0");
     
-    private TextField txtCode, txtName, txtCategory, txtPrice, txtStock, txtQuantity;
-    private Label lblTotal, lblItemCount, lblUserInfo;
-    
+    // Komponen Pembayaran
     private ComboBox<String> cmbPaymentMethod;
-    private TextField txtCashAmount, txtEWalletProvider, txtEWalletAccount;
-    private VBox paymentDetailsBox;
+    private TextField txtCashAmount;
+    private TextField txtEwalletID;
+    private VBox paymentInputContainer;
+    
+    // Komponen Admin Form
+    private TextField txtCodeAdmin, txtNameAdmin, txtCategoryAdmin, txtPriceAdmin, txtStockAdmin;
+    private Product selectedProduct; 
+    
+    private Stage mainStage;
 
     @Override
-    public void start(Stage primaryStage) {
-        this.controller = com.upb.agripos.AppJavaFX.getController();
-        this.authController = com.upb.agripos.AppJavaFX.getAuthController();
-
+    public void start(Stage stage) {
+        this.mainStage = stage;
         BorderPane root = new BorderPane();
-        root.setPadding(new Insets(15));
-        
+
         // Header
-        VBox header = createHeader();
-        root.setTop(header);
-        
-        // Center: Split Pane
-        SplitPane splitPane = new SplitPane();
-        
-        if (authController.isAdmin()) {
-            splitPane.getItems().addAll(createProductPanel(), createCartPanel());
+        root.setTop(createHeader());
+
+        // Content (Cek Role)
+        if (posController.isAdmin()) {
+            root.setCenter(createAdminLayout());
         } else {
-            splitPane.getItems().add(createCartPanel());
+            root.setCenter(createCashierLayout());
         }
+
+        Scene scene = new Scene(root, 1150, 700);
+        stage.setTitle("Agri-POS System - " + (posController.getCurrentUser() != null ? posController.getCurrentUser().getRole() : "Guest"));
+        stage.setScene(scene);
+        stage.show();
         
-        splitPane.setDividerPositions(0.55);
-        root.setCenter(splitPane);
-        
-        Scene scene = new Scene(root, 1200, 700);
-        primaryStage.setTitle("Agri-POS System - " + 
-            authController.getCurrentUser().getName());
-        primaryStage.setScene(scene);
-        primaryStage.show();
-        
-        if (authController.isAdmin()) {
-            loadProducts();
-        }
+        loadProducts();
     }
-    
-    private VBox createHeader() {
-        VBox header = new VBox(10);
-        header.setPadding(new Insets(0, 0, 15, 0));
-        
-        Label title = new Label("AGRI-POS - Sistem Kasir Pertanian");
-        title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #2e7d32;");
-        
-        User user = authController.getCurrentUser();
-        lblUserInfo = new Label("👤 " + user.getName() + " | " + 
-            user.getRole().getDisplayName());
-        lblUserInfo.setStyle("-fx-font-size: 14px; -fx-text-fill: #555;");
+
+    private HBox createHeader() {
+        HBox header = new HBox();
+        header.setPadding(new Insets(15));
+        header.setStyle("-fx-background-color: #2E7D32;"); 
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        Label lblTitle = new Label("Agri-POS");
+        lblTitle.setFont(Font.font("Arial", FontWeight.BOLD, 20));
+        lblTitle.setStyle("-fx-text-fill: white;");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        User user = posController.getCurrentUser();
+        Label lblUser = new Label("User: " + (user != null ? user.getName() : "Guest"));
+        lblUser.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
         
         Button btnLogout = new Button("Logout");
+        btnLogout.setStyle("-fx-background-color: #c62828; -fx-text-fill: white; -fx-cursor: hand;");
         btnLogout.setOnAction(e -> handleLogout());
-        
-        HBox titleBox = new HBox(20);
-        titleBox.setAlignment(Pos.CENTER_LEFT);
-        titleBox.getChildren().addAll(title, new Region(), lblUserInfo, btnLogout);
-        HBox.setHgrow(titleBox.getChildren().get(1), Priority.ALWAYS);
-        
-        header.getChildren().add(titleBox);
+
+        header.getChildren().addAll(lblTitle, spacer, lblUser, new Label("   "), btnLogout);
         return header;
     }
 
-    private VBox createProductPanel() {
-        VBox panel = new VBox(10);
-        panel.setPadding(new Insets(10));
-        
-        Label lblTitle = new Label("📦 Manajemen Produk (Admin Only)");
-        lblTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
-        
-        productTable = new TableView<>();
-        productData = FXCollections.observableArrayList();
-        productTable.setItems(productData);
-        
-        TableColumn<Product, String> colCode = new TableColumn<>("Kode");
-        colCode.setCellValueFactory(new PropertyValueFactory<>("code"));
-        colCode.setPrefWidth(80);
-        
-        TableColumn<Product, String> colName = new TableColumn<>("Nama Produk");
-        colName.setCellValueFactory(new PropertyValueFactory<>("name"));
-        colName.setPrefWidth(150);
-        
-        TableColumn<Product, String> colCategory = new TableColumn<>("Kategori");
-        colCategory.setCellValueFactory(new PropertyValueFactory<>("category"));
-        colCategory.setPrefWidth(100);
-        
-        TableColumn<Product, BigDecimal> colPrice = new TableColumn<>("Harga");
-        colPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
-        colPrice.setPrefWidth(100);
-        
-        TableColumn<Product, Integer> colStock = new TableColumn<>("Stok");
-        colStock.setCellValueFactory(new PropertyValueFactory<>("stock"));
-        colStock.setPrefWidth(60);
-        
-        productTable.getColumns().addAll(colCode, colName, colCategory, colPrice, colStock);
-
-        // Form Input
-        GridPane form = new GridPane();
-        form.setHgap(10);
-        form.setVgap(10);
-        
-        txtCode = new TextField();
-        txtCode.setPromptText("Kode");
-        txtName = new TextField();
-        txtName.setPromptText("Nama");
-        txtCategory = new TextField();
-        txtCategory.setPromptText("Kategori");
-        txtPrice = new TextField();
-        txtPrice.setPromptText("Harga");
-        txtStock = new TextField();
-        txtStock.setPromptText("Stok");
-
-        form.add(new Label("Kode:"), 0, 0);
-        form.add(txtCode, 1, 0);
-        form.add(new Label("Kategori:"), 2, 0);
-        form.add(txtCategory, 3, 0);
-        form.add(new Label("Nama:"), 0, 1);
-        form.add(txtName, 1, 1);
-        form.add(new Label("Harga:"), 2, 1);
-        form.add(txtPrice, 3, 1);
-        form.add(new Label("Stok:"), 0, 2);
-        form.add(txtStock, 1, 2);
-        
-        HBox buttons = new HBox(10);
-        Button btnAdd = new Button("Tambah");
-        Button btnDelete = new Button("Hapus");
-        Button btnRefresh = new Button("Refresh");
-        
-        btnAdd.setOnAction(e -> handleAddProduct());
-        btnDelete.setOnAction(e -> handleDeleteProduct());
-        btnRefresh.setOnAction(e -> loadProducts());
-        
-        buttons.getChildren().addAll(btnAdd, btnDelete, btnRefresh);
-        
-        panel.getChildren().addAll(lblTitle, productTable, form, buttons);
-        VBox.setVgrow(productTable, Priority.ALWAYS);
-        return panel;
+    private void handleLogout() {
+        mainStage.close();
+        try { new LoginView().start(new Stage()); } catch (Exception e) { e.printStackTrace(); }
     }
 
-    private VBox createCartPanel() {
-        VBox panel = new VBox(10);
-        panel.setPadding(new Insets(10));
+    // ==========================================
+    // LAYOUT KASIR
+    // ==========================================
+    private SplitPane createCashierLayout() {
+        // --- KIRI: DAFTAR PRODUK & PENCARIAN ---
+        VBox leftSide = new VBox(10);
+        leftSide.setPadding(new Insets(10));
+        leftSide.getChildren().add(new Label("DAFTAR PRODUK"));
         
-        Label lblTitle = new Label("🛒 Keranjang Belanja");
-        lblTitle.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        FilteredList<Product> filteredData = new FilteredList<>(productData, p -> true);
         
-        // Product Selection (untuk Kasir)
-        if (!authController.isAdmin()) {
-            HBox productSelect = new HBox(10);
-            Button btnLoadProducts = new Button("Lihat Daftar Produk");
-            btnLoadProducts.setOnAction(e -> showProductSelection());
-            productSelect.getChildren().add(btnLoadProducts);
-            panel.getChildren().add(productSelect);
-        }
+        HBox searchBox = new HBox(10);
+        searchBox.setAlignment(Pos.CENTER_LEFT);
+        TextField txtSearch = new TextField();
+        txtSearch.setPromptText("Cari Kode / Nama Produk...");
+        txtSearch.setPrefWidth(250);
         
-        cartTable = new TableView<>();
-        cartData = FXCollections.observableArrayList();
-        cartTable.setItems(cartData);
+        txtSearch.textProperty().addListener((observable, oldValue, newValue) -> {
+            filteredData.setPredicate(product -> {
+                if (newValue == null || newValue.isEmpty()) return true;
+                String lowerVal = newValue.toLowerCase();
+                return product.getName().toLowerCase().contains(lowerVal) || 
+                       product.getCode().toLowerCase().contains(lowerVal);
+            });
+        });
         
-        TableColumn<CartItem, String> colProduct = new TableColumn<>("Produk");
-        colProduct.setCellValueFactory(data -> 
-            new javafx.beans.property.SimpleStringProperty(
-                data.getValue().getProduct().getName()
-            ));
-        
-        TableColumn<CartItem, Integer> colQty = new TableColumn<>("Qty");
-        colQty.setCellValueFactory(new PropertyValueFactory<>("quantity"));
-        
-        TableColumn<CartItem, BigDecimal> colPrice = new TableColumn<>("Harga");
-        colPrice.setCellValueFactory(data -> 
-            new javafx.beans.property.SimpleObjectProperty<>(
-                data.getValue().getProduct().getPrice()
-            ));
-        
-        TableColumn<CartItem, BigDecimal> colSub = new TableColumn<>("Subtotal");
-        colSub.setCellValueFactory(new PropertyValueFactory<>("subtotal"));
-        
-        cartTable.getColumns().addAll(colProduct, colQty, colPrice, colSub);
+        Button btnReset = new Button("Reset");
+        btnReset.setOnAction(e -> txtSearch.clear());
+        searchBox.getChildren().addAll(new Label("Cari:"), txtSearch, btnReset);
 
-        // Quantity input (hanya untuk Admin yang punya tabel produk)
-        if (authController.isAdmin()) {
-            HBox qtyBox = new HBox(10);
-            qtyBox.setAlignment(Pos.CENTER_LEFT);
-            txtQuantity = new TextField("1");
-            txtQuantity.setPrefWidth(60);
-            Button btnAddToCart = new Button("➕ Tambah ke Keranjang");
-            btnAddToCart.setStyle("-fx-background-color: #2e7d32; -fx-text-fill: white;");
-            btnAddToCart.setOnAction(e -> handleAddToCart());
-            qtyBox.getChildren().addAll(new Label("Jumlah:"), txtQuantity, btnAddToCart);
-            panel.getChildren().add(qtyBox);
-        }
+        setupProductTable(tableProduct);
         
-        // Payment Method Selection
-        VBox paymentBox = createPaymentMethodBox();
+        SortedList<Product> sortedData = new SortedList<>(filteredData);
+        sortedData.comparatorProperty().bind(tableProduct.comparatorProperty());
+        tableProduct.setItems(sortedData);
         
-        // Summary
-        VBox summary = new VBox(10);
-        summary.setPadding(new Insets(10));
-        summary.setStyle("-fx-border-color: #ccc; -fx-border-width: 1; -fx-background-color: #f5f5f5;");
+        VBox.setVgrow(tableProduct, Priority.ALWAYS);
         
-        lblItemCount = new Label("Item: 0");
-        lblItemCount.setStyle("-fx-font-size: 14px;");
+        HBox actionBox = new HBox(10);
+        actionBox.setAlignment(Pos.CENTER_LEFT);
+        TextField txtQty = new TextField("1");
+        txtQty.setPrefWidth(60);
+        Button btnAdd = new Button("Tambah ke Keranjang (+)");
+        btnAdd.setStyle("-fx-background-color: #2E7D32; -fx-text-fill: white; -fx-cursor: hand;");
         
-        lblTotal = new Label("TOTAL: Rp 0");
-        lblTotal.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #c62828;");
+        btnAdd.setOnAction(e -> {
+            Product p = tableProduct.getSelectionModel().getSelectedItem();
+            if (p != null) {
+                try {
+                    int qty = Integer.parseInt(txtQty.getText());
+                    posController.addToCart(p, qty);
+                    refreshCartTable();
+                } catch (Exception ex) { showAlert("Error", ex.getMessage()); }
+            } else {
+                showAlert("Info", "Pilih produk dulu!");
+            }
+        });
         
-        Button btnClear = new Button("Kosongkan Keranjang");
-        btnClear.setOnAction(e -> handleClearCart());
+        actionBox.getChildren().addAll(new Label("Qty:"), txtQty, btnAdd);
+        leftSide.getChildren().addAll(searchBox, tableProduct, actionBox);
+
+        // --- KANAN: KERANJANG & PEMBAYARAN ---
+        VBox rightSide = new VBox(10);
+        rightSide.setPadding(new Insets(15));
+        rightSide.setStyle("-fx-background-color: #f4f4f4; -fx-border-color: #ddd; -fx-border-width: 0 0 0 1;");
         
-        Button btnCheckout = new Button("💳 PROSES CHECKOUT");
-        btnCheckout.setMaxWidth(Double.MAX_VALUE);
-        btnCheckout.setPrefHeight(50);
-        btnCheckout.setStyle("-fx-background-color: #1565c0; -fx-text-fill: white; " +
-                           "-fx-font-weight: bold; -fx-font-size: 16px;");
-        btnCheckout.setOnAction(e -> handleCheckout());
+        Label lblTitleCart = new Label("KERANJANG BELANJA");
+        lblTitleCart.setFont(Font.font("System", FontWeight.BOLD, 14));
         
-        summary.getChildren().addAll(lblItemCount, lblTotal, btnClear, btnCheckout);
+        setupCartTable();
+        tableCart.setPrefHeight(250);
         
-        panel.getChildren().addAll(lblTitle, cartTable, paymentBox, summary);
-        VBox.setVgrow(cartTable, Priority.ALWAYS);
-        return panel;
-    }
-    
-    private VBox createPaymentMethodBox() {
-        VBox box = new VBox(10);
-        box.setPadding(new Insets(10));
-        box.setStyle("-fx-border-color: #aaa; -fx-border-width: 1;");
+        HBox cartActions = new HBox(10);
+        Button btnRemove = new Button("Hapus Item");
+        btnRemove.setOnAction(e -> {
+            CartItem item = tableCart.getSelectionModel().getSelectedItem();
+            if(item != null) { posController.removeFromCart(item.getProduct().getCode()); refreshCartTable(); }
+        });
+        Button btnClear = new Button("Kosongkan Cart");
+        btnClear.setStyle("-fx-text-fill: red;");
+        btnClear.setOnAction(e -> { posController.clearCart(); refreshCartTable(); });
+        cartActions.getChildren().addAll(btnRemove, btnClear);
         
-        Label lblPayment = new Label("Metode Pembayaran:");
-        lblPayment.setStyle("-fx-font-weight: bold;");
+        // AREA PEMBAYARAN
+        VBox paymentBox = new VBox(10);
+        paymentBox.setPadding(new Insets(15));
+        paymentBox.setStyle("-fx-background-color: white; -fx-background-radius: 5; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 1);");
+        
+        Label lblPayTitle = new Label("METODE PEMBAYARAN");
+        lblPayTitle.setFont(Font.font("System", FontWeight.BOLD, 12));
         
         cmbPaymentMethod = new ComboBox<>();
-        cmbPaymentMethod.getItems().addAll("Tunai (Cash)", "E-Wallet");
+        cmbPaymentMethod.getItems().addAll("Tunai (Cash)", "E-Wallet (QRIS/Transfer)");
         cmbPaymentMethod.setValue("Tunai (Cash)");
-        cmbPaymentMethod.setOnAction(e -> updatePaymentFields());
+        cmbPaymentMethod.setMaxWidth(Double.MAX_VALUE);
         
-        paymentDetailsBox = new VBox(5);
+        paymentInputContainer = new VBox(5);
+        txtCashAmount = new TextField(); 
+        txtCashAmount.setPromptText("Nominal Uang (Rp)");
+        txtEwalletID = new TextField(); 
+        txtEwalletID.setPromptText("Nomor HP / ID Wallet");
         
-        // Cash fields
-        txtCashAmount = new TextField();
-        txtCashAmount.setPromptText("Jumlah uang dibayar");
+        cmbPaymentMethod.setOnAction(e -> updatePaymentInputVisibility());
+        updatePaymentInputVisibility(); 
+
+        HBox totalBox = new HBox(10);
+        totalBox.setAlignment(Pos.CENTER_RIGHT);
+        Label lblTotalTitle = new Label("TOTAL TAGIHAN:");
+        lblTotalCart.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        lblTotalCart.setStyle("-fx-text-fill: #2E7D32;");
+        totalBox.getChildren().addAll(lblTotalTitle, lblTotalCart);
         
-        // E-Wallet fields
-        txtEWalletProvider = new TextField();
-        txtEWalletProvider.setPromptText("Provider (GoPay/OVO/Dana)");
-        txtEWalletAccount = new TextField();
-        txtEWalletAccount.setPromptText("Nomor Akun");
+        Button btnCheckout = new Button("PROSES PEMBAYARAN");
+        btnCheckout.setMaxWidth(Double.MAX_VALUE);
+        btnCheckout.setPrefHeight(45);
+        btnCheckout.setStyle("-fx-background-color: #1565C0; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-cursor: hand;");
+        btnCheckout.setOnAction(e -> handleCheckoutIntegrated());
+
+        paymentBox.getChildren().addAll(lblPayTitle, cmbPaymentMethod, paymentInputContainer, new Separator(), totalBox, btnCheckout);
         
-        updatePaymentFields();
-        
-        box.getChildren().addAll(lblPayment, cmbPaymentMethod, paymentDetailsBox);
-        return box;
+        rightSide.getChildren().addAll(lblTitleCart, tableCart, cartActions, new Region(){{setPrefHeight(10);}}, paymentBox);
+        VBox.setVgrow(rightSide, Priority.ALWAYS);
+
+        SplitPane split = new SplitPane();
+        split.getItems().addAll(leftSide, rightSide);
+        split.setDividerPositions(0.60); 
+        return split;
     }
-    
-    private void updatePaymentFields() {
-        paymentDetailsBox.getChildren().clear();
-        
-        String method = cmbPaymentMethod.getValue();
-        if (method.startsWith("Tunai")) {
-            paymentDetailsBox.getChildren().add(new Label("Uang Dibayar:"));
-            paymentDetailsBox.getChildren().add(txtCashAmount);
+
+    private void updatePaymentInputVisibility() {
+        paymentInputContainer.getChildren().clear();
+        String selected = cmbPaymentMethod.getValue();
+        if (selected != null && selected.contains("Tunai")) {
+            paymentInputContainer.getChildren().addAll(new Label("Nominal Uang:"), txtCashAmount);
         } else {
-            paymentDetailsBox.getChildren().addAll(
-                new Label("Provider E-Wallet:"),
-                txtEWalletProvider,
-                new Label("Nomor Akun:"),
-                txtEWalletAccount
-            );
+            paymentInputContainer.getChildren().addAll(new Label("ID Pelanggan / No. HP:"), txtEwalletID);
         }
     }
 
-    // ============= EVENT HANDLERS =============
+    private void handleCheckoutIntegrated() {
+        if(posController.getCartItems().isEmpty()) {
+            showAlert("Warning", "Keranjang kosong! Masukkan produk dulu.");
+            return;
+        }
+        try {
+            PaymentMethod method;
+            String selected = cmbPaymentMethod.getValue();
+            BigDecimal totalTagihan = posController.getCartTotal();
+
+            if (selected.contains("Tunai")) {
+                String cashStr = txtCashAmount.getText().trim();
+                if(cashStr.isEmpty()) throw new Exception("Masukkan nominal uang!");
+                BigDecimal uangBayar = new BigDecimal(cashStr);
+                
+                if(uangBayar.compareTo(totalTagihan) < 0) throw new Exception("Uang Kurang!");
+                method = new CashPayment(uangBayar);
+            } else {
+                String walletID = txtEwalletID.getText().trim();
+                if(walletID.isEmpty()) throw new Exception("Masukkan Nomor HP/ID Wallet!");
+                method = new EWalletPayment("QRIS/Wallet", walletID);
+            }
+
+            Transaction t = posController.checkout(method);
+            showReceiptDialog(t);
+            
+            refreshCartTable();
+            txtCashAmount.clear();
+            txtEwalletID.clear();
+            loadProducts(); 
+
+        } catch (NumberFormatException e) {
+            showAlert("Input Error", "Nominal harus berupa angka valid!");
+        } catch (Exception ex) {
+            showAlert("Gagal", ex.getMessage());
+        }
+    }
+
+    // ==========================================
+    // LAYOUT ADMIN
+    // ==========================================
+    private TabPane createAdminLayout() {
+        TabPane tabs = new TabPane();
+        Tab tabProduk = new Tab("Manajemen Produk", createAdminProductView());
+        tabProduk.setClosable(false);
+        Tab tabLaporan = new Tab("Laporan Penjualan", createAdminReportView());
+        tabLaporan.setClosable(false);
+        tabs.getTabs().addAll(tabProduk, tabLaporan);
+        return tabs;
+    }
+
+    private VBox createAdminProductView() {
+        VBox layout = new VBox(10); layout.setPadding(new Insets(10));
+        
+        GridPane form = new GridPane(); form.setHgap(10); form.setVgap(10);
+        form.setStyle("-fx-background-color: #f9f9f9; -fx-padding: 10; -fx-background-radius: 5;");
+        
+        txtCodeAdmin = new TextField(); txtCodeAdmin.setPromptText("Kode");
+        txtNameAdmin = new TextField(); txtNameAdmin.setPromptText("Nama");
+        txtPriceAdmin = new TextField(); txtPriceAdmin.setPromptText("Harga");
+        txtStockAdmin = new TextField(); txtStockAdmin.setPromptText("Stok");
+        
+        // --- [PERBAIKAN] INISIALISASI TXT KATEGORI ---
+        txtCategoryAdmin = new TextField(); txtCategoryAdmin.setPromptText("Kategori");
+        // ---------------------------------------------
+        
+        form.addRow(0, new Label("Kode:"), txtCodeAdmin, new Label("Nama:"), txtNameAdmin);
+        form.addRow(1, new Label("Harga:"), txtPriceAdmin, new Label("Stok:"), txtStockAdmin);
+        
+        // --- [PERBAIKAN] MENAMBAHKAN KE LAYOUT GRID ---
+        form.addRow(2, new Label("Kategori:"), txtCategoryAdmin);
+        // ----------------------------------------------
+
+        HBox buttons = new HBox(10);
+        Button btnSave = new Button("Simpan Baru");
+        Button btnUpdate = new Button("Update");
+        Button btnDelete = new Button("Hapus");
+        Button btnClear = new Button("Clear Form");
+        
+        btnSave.setOnAction(e -> handleAdminAdd());
+        btnUpdate.setOnAction(e -> handleAdminUpdate());
+        btnDelete.setOnAction(e -> handleAdminDelete());
+        btnClear.setOnAction(e -> clearAdminForm());
+        
+        buttons.getChildren().addAll(btnSave, btnUpdate, btnDelete, btnClear);
+        form.add(buttons, 0, 3, 4, 1);
+
+        setupProductTable(tableAdminProduct);
+        tableAdminProduct.setItems(productData); 
+        
+        tableAdminProduct.setOnMouseClicked(e -> {
+            Product p = tableAdminProduct.getSelectionModel().getSelectedItem();
+            if(p!=null) {
+                selectedProduct = p;
+                txtCodeAdmin.setText(p.getCode());
+                txtCodeAdmin.setDisable(true);
+                txtNameAdmin.setText(p.getName());
+                
+                // --- [PERBAIKAN] MENGISI FIELD KATEGORI SAAT KLIK ---
+                txtCategoryAdmin.setText(p.getCategory());
+                // ----------------------------------------------------
+                
+                txtPriceAdmin.setText(p.getPrice().toString());
+                txtStockAdmin.setText(String.valueOf(p.getStock()));
+            }
+        });
+        
+        layout.getChildren().addAll(new Label("Form Produk"), form, new Separator(), tableAdminProduct);
+        VBox.setVgrow(tableAdminProduct, Priority.ALWAYS);
+        return layout;
+    }
+    
+    private void handleAdminAdd() {
+        try {
+            posController.saveProduct(
+                txtCodeAdmin.getText(), txtNameAdmin.getText(), 
+                txtCategoryAdmin.getText().isEmpty() ? "Umum" : txtCategoryAdmin.getText(), 
+                new BigDecimal(txtPriceAdmin.getText()), Integer.parseInt(txtStockAdmin.getText()), false
+            );
+            loadProducts(); clearAdminForm(); showAlert("Sukses","Tersimpan");
+        } catch(Exception ex){ showAlert("Err", ex.getMessage());}
+    }
+
+    private void handleAdminUpdate() {
+        if(selectedProduct == null) return;
+        try {
+            posController.saveProduct(
+                txtCodeAdmin.getText(), txtNameAdmin.getText(), txtCategoryAdmin.getText(), 
+                new BigDecimal(txtPriceAdmin.getText()), Integer.parseInt(txtStockAdmin.getText()), true
+            );
+            loadProducts(); clearAdminForm(); showAlert("Sukses","Diupdate");
+        } catch(Exception ex){ showAlert("Err", ex.getMessage());}
+    }
+
+    private void handleAdminDelete() {
+        if(selectedProduct == null) return;
+        try {
+            posController.deleteProduct(selectedProduct.getCode());
+            loadProducts(); clearAdminForm(); showAlert("Sukses","Dihapus");
+        } catch(Exception ex){ showAlert("Err", ex.getMessage());}
+    }
+
+    private void clearAdminForm() {
+        txtCodeAdmin.clear(); txtCodeAdmin.setDisable(false);
+        txtNameAdmin.clear(); 
+        
+        // --- [PERBAIKAN] CLEAR FIELD KATEGORI ---
+        if(txtCategoryAdmin != null) txtCategoryAdmin.clear();
+        // ----------------------------------------
+        
+        txtPriceAdmin.clear(); txtStockAdmin.clear();
+        selectedProduct = null;
+    }
+    
+    private VBox createAdminReportView() {
+        VBox layout = new VBox(10); layout.setPadding(new Insets(10));
+        DatePicker dp = new DatePicker(LocalDate.now());
+        Button btnL = new Button("Load Laporan");
+        TextArea ta = new TextArea(); ta.setEditable(false); ta.setFont(Font.font("Monospaced", 12));
+        
+        btnL.setOnAction(e -> {
+            try {
+                var list = reportController.getDailySalesReport(dp.getValue());
+                BigDecimal rev = reportController.calculateRevenue(list);
+                StringBuilder sb = new StringBuilder("LAPORAN TGL: " + dp.getValue() + "\n--------------------------------\n");
+                for(Transaction t : list) sb.append(String.format("%s | Rp %,.0f | %s\n", t.getId(), t.getTotalAmount(), t.getStatus()));
+                sb.append("--------------------------------\nTOTAL OMSET: Rp ").append(String.format("%,.0f", rev));
+                ta.setText(sb.toString());
+            } catch(Exception ex) { showAlert("Err", ex.getMessage()); }
+        });
+        
+        layout.getChildren().addAll(new Label("Laporan Harian"), new HBox(10, dp, btnL), ta);
+        VBox.setVgrow(ta, Priority.ALWAYS);
+        return layout;
+    }
+
+    // ==========================================
+    // HELPERS
+    // ==========================================
     
     private void loadProducts() {
         try {
-            productData.setAll(controller.loadProducts());
+            productData.setAll(posController.getAllProducts());
         } catch (Exception e) {
-            showError("Error Load", e.getMessage());
+            e.printStackTrace();
+            showAlert("Error Load Data", e.getMessage());
         }
     }
 
-    private void handleAddProduct() {
-        try {
-            String code = txtCode.getText();
-            String name = txtName.getText();
-            String category = txtCategory.getText().isEmpty() ? "Umum" : txtCategory.getText();
-            BigDecimal price = new BigDecimal(txtPrice.getText());
-            int stock = Integer.parseInt(txtStock.getText());
-            
-            controller.addProduct(code, name, category, price, stock);
-            showInfo("Sukses", "Produk berhasil ditambahkan!");
-            clearProductForm();
-            loadProducts();
-        } catch (Exception e) {
-            showError("Gagal Tambah Produk", e.getMessage());
-        }
-    }
-
-    private void handleDeleteProduct() {
-        Product selected = productTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showWarning("Pilih Produk", "Pilih produk yang akan dihapus!");
-            return;
-        }
+    private void setupProductTable(TableView<Product> table) {
+        table.getColumns().clear();
+        TableColumn<Product, String> c1 = new TableColumn<>("Kode"); c1.setCellValueFactory(new PropertyValueFactory<>("code"));
+        TableColumn<Product, String> c2 = new TableColumn<>("Nama"); c2.setCellValueFactory(new PropertyValueFactory<>("name")); c2.setPrefWidth(150);
         
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, 
-            "Hapus produk " + selected.getName() + "?");
-        if (confirm.showAndWait().get() == ButtonType.OK) {
-            try {
-                controller.deleteProduct(selected.getCode());
-                loadProducts();
-            } catch (Exception e) {
-                showError("Gagal Hapus", e.getMessage());
-            }
-        }
-    }
-
-    private void handleAddToCart() {
-        Product selected = productTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showWarning("Pilih Produk", "Pilih produk dari tabel!");
-            return;
-        }
+        // --- [PERBAIKAN] MENAMBAHKAN KOLOM KATEGORI DI TABEL ---
+        TableColumn<Product, String> cCat = new TableColumn<>("Kategori"); cCat.setCellValueFactory(new PropertyValueFactory<>("category"));
+        // -------------------------------------------------------
         
-        try {
-            int qty = Integer.parseInt(txtQuantity.getText());
-            controller.addToCart(selected, qty);
-            updateCartDisplay();
-            showInfo("Berhasil", "Produk ditambahkan ke keranjang!");
-        } catch (Exception e) {
-            showError("Gagal", e.getMessage());
-        }
+        TableColumn<Product, BigDecimal> c3 = new TableColumn<>("Harga"); c3.setCellValueFactory(new PropertyValueFactory<>("price"));
+        TableColumn<Product, Integer> c4 = new TableColumn<>("Stok"); c4.setCellValueFactory(new PropertyValueFactory<>("stock"));
+        table.getColumns().addAll(c1,c2,cCat,c3,c4);
     }
     
-    private void handleClearCart() {
-        if (cartData.isEmpty()) return;
-        
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Kosongkan keranjang?");
-        if (confirm.showAndWait().get() == ButtonType.OK) {
-            controller.clearCart();
-            updateCartDisplay();
-        }
+    private void setupCartTable() {
+        tableCart.getColumns().clear();
+        TableColumn<CartItem, String> c1 = new TableColumn<>("Item"); 
+        c1.setCellValueFactory(d->new javafx.beans.property.SimpleStringProperty(d.getValue().getProduct().getName()));
+        TableColumn<CartItem, Integer> c2 = new TableColumn<>("Qty"); 
+        c2.setCellValueFactory(new PropertyValueFactory<>("quantity"));
+        TableColumn<CartItem, BigDecimal> c3 = new TableColumn<>("Subtotal"); 
+        c3.setCellValueFactory(new PropertyValueFactory<>("subtotal"));
+        tableCart.getColumns().addAll(c1,c2,c3);
+        tableCart.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
     }
 
-    private void handleCheckout() {
-        if (cartData.isEmpty()) {
-            showWarning("Keranjang Kosong", "Tambahkan produk terlebih dahulu!");
-            return;
-        }
-        
-        try {
-            // Buat payment method berdasarkan pilihan
-            PaymentMethod paymentMethod = createPaymentMethod();
-            
-            // Proses transaksi
-            Transaction transaction = controller.checkout(paymentMethod);
-            
-            // Generate & tampilkan struk
-            Receipt receipt = controller.generateReceipt(transaction);
-            showReceipt(receipt);
-            
-            updateCartDisplay();
-            if (authController.isAdmin()) {
-                loadProducts(); // Refresh stok
-            }
-            
-        } catch (Exception e) {
-            showError("Checkout Gagal", e.getMessage());
-        }
+    private void refreshCartTable() {
+        tableCart.setItems(FXCollections.observableArrayList(posController.getCartItems()));
+        lblTotalCart.setText("Rp " + String.format("%,.0f", posController.getCartTotal()));
     }
-    
-    private PaymentMethod createPaymentMethod() throws Exception {
-        String method = cmbPaymentMethod.getValue();
-        
-        if (method.startsWith("Tunai")) {
-            String amountStr = txtCashAmount.getText();
-            if (amountStr.isEmpty()) {
-                throw new Exception("Masukkan jumlah uang dibayar!");
-            }
-            BigDecimal amount = new BigDecimal(amountStr);
-            return new CashPayment(amount);
-        } else {
-            String provider = txtEWalletProvider.getText();
-            String account = txtEWalletAccount.getText();
-            return new EWalletPayment(provider, account);
-        }
-    }
-    
-    private void showReceipt(Receipt receipt) {
+
+    private void showReceiptDialog(Transaction t) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Struk Pembayaran");
+        alert.setTitle("Struk Belanja");
         alert.setHeaderText("Transaksi Berhasil!");
-        
-        TextArea textArea = new TextArea(receipt.formatReceipt());
-        textArea.setEditable(false);
-        textArea.setWrapText(true);
-        textArea.setPrefRowCount(20);
-        textArea.setStyle("-fx-font-family: monospace;");
-        
-        alert.getDialogPane().setContent(textArea);
-        alert.getDialogPane().setPrefWidth(500);
+        TextArea area = new TextArea(posController.generateReceipt(t).formatReceipt());
+        area.setEditable(false); area.setFont(Font.font("Monospaced", 12));
+        alert.getDialogPane().setContent(area);
         alert.showAndWait();
     }
-    
-    private void showProductSelection() {
-        // Simplified: show dialog with product list for cashier
-        try {
-            List<Product> products = controller.loadProducts();
-            
-            Dialog<Product> dialog = new Dialog<>();
-            dialog.setTitle("Pilih Produk");
-            
-            ListView<Product> listView = new ListView<>();
-            listView.getItems().addAll(products);
-            
-            dialog.getDialogPane().setContent(listView);
-            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-            
-            dialog.showAndWait().ifPresent(product -> {
-                TextInputDialog qtyDialog = new TextInputDialog("1");
-                qtyDialog.setTitle("Jumlah");
-                qtyDialog.setHeaderText("Masukkan jumlah untuk " + product.getName());
-                
-                qtyDialog.showAndWait().ifPresent(qtyStr -> {
-                    try {
-                        int qty = Integer.parseInt(qtyStr);
-                        controller.addToCart(product, qty);
-                        updateCartDisplay();
-                    } catch (Exception e) {
-                        showError("Gagal", e.getMessage());
-                    }
-                });
-            });
-            
-        } catch (Exception e) {
-            showError("Error", e.getMessage());
-        }
-    }
-    
-    private void handleLogout() {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Logout dari sistem?");
-        if (confirm.showAndWait().get() == ButtonType.OK) {
-            authController.logout();
-            
-            try {
-                LoginView loginView = new LoginView();
-                Stage loginStage = new Stage();
-                loginView.start(loginStage);
-                
-                Stage currentStage = (Stage) lblUserInfo.getScene().getWindow();
-                currentStage.close();
-            } catch (Exception e) {
-                showError("Error", "Gagal logout: " + e.getMessage());
-            }
-        }
-    }
 
-    private void updateCartDisplay() {
-        cartData.setAll(controller.getCartItems());
-        lblItemCount.setText("Item: " + cartData.size());
-        lblTotal.setText(String.format("TOTAL: Rp %,.0f", controller.getCartTotal()));
-    }
-
-    private void clearProductForm() {
-        txtCode.clear();
-        txtName.clear();
-        txtCategory.clear();
-        txtPrice.clear();
-        txtStock.clear();
-    }
-
-    private void showError(String title, String msg) {
-        new Alert(Alert.AlertType.ERROR, msg).showAndWait();
-    }
-
-    private void showInfo(String title, String msg) {
-        new Alert(Alert.AlertType.INFORMATION, msg).showAndWait();
-    }
-
-    private void showWarning(String title, String msg) {
-        new Alert(Alert.AlertType.WARNING, msg).showAndWait();
+    private void showAlert(String title, String msg) {
+        new Alert(Alert.AlertType.INFORMATION, msg).show();
     }
 }

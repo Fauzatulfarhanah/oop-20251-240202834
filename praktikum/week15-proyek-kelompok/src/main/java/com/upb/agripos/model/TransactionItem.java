@@ -1,9 +1,7 @@
 package com.upb.agripos.model;
-
 import java.math.BigDecimal;
 
 public class TransactionItem {
-    private int id;
     private String productCode;
     private String productName;
     private int quantity;
@@ -11,28 +9,22 @@ public class TransactionItem {
     private BigDecimal subtotal;
 
     public TransactionItem() {}
-
-    public TransactionItem(Product product, int quantity) {
-        this.productCode = product.getCode();
-        this.productName = product.getName();
-        this.quantity = quantity;
-        this.priceAtSale = product.getPrice();
-        this.subtotal = product.getPrice().multiply(new BigDecimal(quantity));
+    public TransactionItem(Product p, int qty) {
+        this.productCode = p.getCode();
+        this.productName = p.getName();
+        this.quantity = qty;
+        this.priceAtSale = p.getPrice();
+        this.subtotal = p.getPrice().multiply(new BigDecimal(qty));
     }
-
-    public BigDecimal getSubtotal() {
-        return priceAtSale.multiply(new BigDecimal(quantity));
-    }
-
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    // Getters
     public String getProductCode() { return productCode; }
-    public void setProductCode(String productCode) { this.productCode = productCode; }
+    public void setProductCode(String c) { this.productCode = c; }
     public String getProductName() { return productName; }
-    public void setProductName(String productName) { this.productName = productName; }
+    public void setProductName(String n) { this.productName = n; }
     public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
+    public void setQuantity(int q) { this.quantity = q; }
     public BigDecimal getPriceAtSale() { return priceAtSale; }
-    public void setPriceAtSale(BigDecimal priceAtSale) { this.priceAtSale = priceAtSale; }
-    public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
+    public void setPriceAtSale(BigDecimal p) { this.priceAtSale = p; }
+    public BigDecimal getSubtotal() { return subtotal; }
+    public void setSubtotal(BigDecimal s) { this.subtotal = s; }
 }

@@ -3,8 +3,8 @@ package com.upb.agripos.service;
 import java.util.List;
 
 import com.upb.agripos.dao.ProductDAO;
-import com.upb.agripos.exception.ValidationException;
 import com.upb.agripos.exception.OutOfStockException;
+import com.upb.agripos.exception.ValidationException;
 import com.upb.agripos.model.CartItem;
 import com.upb.agripos.model.Product;
 
@@ -20,11 +20,12 @@ public class ProductService {
     }
 
     public void addProduct(Product product) throws Exception {
-        // Validasi input
+        // === VALIDASI INI YANG KEMUNGKINAN HILANG/TIDAK JALAN ===
         if (product.getCode() == null || product.getCode().trim().isEmpty()) {
             throw new ValidationException("Kode produk tidak boleh kosong");
         }
         
+        // Validasi Nama Kosong (Ini yang dites oleh Unit Test yang error)
         if (product.getName() == null || product.getName().trim().isEmpty()) {
             throw new ValidationException("Nama produk tidak boleh kosong");
         }
@@ -32,6 +33,7 @@ public class ProductService {
         if (productDAO.findByCode(product.getCode()) != null) {
             throw new ValidationException("Kode produk sudah ada!");
         }
+        // ========================================================
         
         productDAO.insert(product);
     }
@@ -52,28 +54,15 @@ public class ProductService {
     
     public boolean validateStock(String productCode, int requiredQty) throws Exception {
         Product product = productDAO.findByCode(productCode);
-        
-        if (product == null) {
-            throw new ValidationException("Produk tidak ditemukan");
-        }
-        
-        return product.getStock() >= requiredQty;
+        return product != null && product.getStock() >= requiredQty;
     }
     
     public void reduceStock(String productCode, int quantity) throws Exception {
         Product product = productDAO.findByCode(productCode);
-        
-        if (product == null) {
-            throw new ValidationException("Produk tidak ditemukan");
-        }
+        if (product == null) throw new ValidationException("Produk tidak ditemukan");
         
         int newStock = product.getStock() - quantity;
-        
-        if (newStock < 0) {
-            throw new OutOfStockException(
-                "Stok tidak cukup untuk: " + product.getName()
-            );
-        }
+        if (newStock < 0) throw new OutOfStockException("Stok tidak cukup");
         
         productDAO.updateStock(productCode, newStock);
     }

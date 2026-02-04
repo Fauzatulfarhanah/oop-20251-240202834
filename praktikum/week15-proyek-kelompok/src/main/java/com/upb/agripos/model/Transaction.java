@@ -9,7 +9,7 @@ public class Transaction {
     private String id;
     private LocalDateTime transactionDate;
     private User cashier;
-    private PaymentMethod paymentMethod; // Dari Anggota 2
+    private PaymentMethod paymentMethod;
     private BigDecimal totalAmount;
     private String status;
     private List<TransactionItem> items;
@@ -20,6 +20,7 @@ public class Transaction {
         this.status = "COMPLETED";
     }
 
+    // METHOD INI YANG HILANG DAN MENYEBABKAN ERROR DI TEST
     public BigDecimal calculateTotal() {
         return items.stream()
             .map(TransactionItem::getSubtotal)

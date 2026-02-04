@@ -8,27 +8,13 @@ import com.upb.agripos.dao.TransactionDAO;
 import com.upb.agripos.model.Transaction;
 
 public class ReportService {
-    private TransactionDAO transactionDAO;
-    
-    public ReportService(TransactionDAO transactionDAO) {
-        this.transactionDAO = transactionDAO;
-    }
+    private TransactionDAO dao;
+    public ReportService(TransactionDAO dao) { this.dao = dao; }
     
     public List<Transaction> getDailySales(LocalDate date) throws Exception {
-        return transactionDAO.findByDate(date);
+        return dao.findByDate(date);
     }
-    
-    public List<Transaction> getSalesByPeriod(LocalDate start, LocalDate end) throws Exception {
-        return transactionDAO.findByPeriod(start, end);
-    }
-    
     public BigDecimal calculateTotalRevenue(List<Transaction> transactions) {
-        return transactions.stream()
-            .map(Transaction::getTotalAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-    
-    public int countTransactions(List<Transaction> transactions) {
-        return transactions.size();
+        return transactions.stream().map(Transaction::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

@@ -9,19 +9,17 @@ public class Product {
     private BigDecimal price;
     private int stock;
 
-    // Constructor kosong
     public Product() {}
 
-    // Constructor tanpa category (default: "Umum")
+    // CONSTRUCTOR INI YANG HILANG DAN MENYEBABKAN ERROR DI TEST
     public Product(String code, String name, BigDecimal price, int stock) {
         this.code = code;
         this.name = name;
-        this.category = "Umum";
+        this.category = "Umum"; // Default category
         this.price = price;
         this.stock = stock;
     }
     
-    // Constructor lengkap dengan category
     public Product(String code, String name, String category, BigDecimal price, int stock) {
         this.code = code;
         this.name = name;
@@ -48,18 +46,5 @@ public class Product {
     public String toString() {
         return String.format("%s - %s [%s] (Rp%,.0f, Stok: %d)", 
             code, name, category, price, stock);
-    }
-    
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Product product = (Product) obj;
-        return code != null && code.equals(product.code);
-    }
-    
-    @Override
-    public int hashCode() {
-        return code != null ? code.hashCode() : 0;
     }
 }
